@@ -1,0 +1,20 @@
+{
+	"name": "blog",
+	"version": "1.0.0",
+	"description": "This repo contains all the files that make up my blog at [link.com]().",
+	"main": "./src/build.js",
+	"scripts": {
+		"build": "node src/build.js"
+	},
+	"type": "module",
+	"engines": {
+		"node": "17.0.1"
+	},
+	"author": "ArtInLines",
+	"license": "",
+	"dependencies": {
+		"micromark": "^3.1.0",
+		"micromark-extension-gfm": "^2.0.1",
+		"micromark-extension-math": "^2.0.2"
+	}
+}
