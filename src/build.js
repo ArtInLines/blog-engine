@@ -6,7 +6,9 @@ import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkToc from 'remark-toc';
+import remarkMath from 'remark-math';
 import remarkRehype from 'remark-rehype';
+import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -48,7 +50,9 @@ async function buildFile(inFilePath, title, outFilePath = null) {
 		.use(remarkFrontmatter)
 		.use(remarkGfm)
 		.use(remarkToc, { maxDepth: 4, ordered: true, heading: 'toc|table[ -]of[ -]contents?|contents' })
+		.use(remarkMath)
 		.use(remarkRehype)
+		.use(rehypeKatex)
 		.use(rehypeStringify)
 		.process(md);
 	writeFileSync(outFilePath, html(title, res));
