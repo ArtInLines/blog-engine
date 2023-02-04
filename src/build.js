@@ -1,13 +1,15 @@
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { basename, join, dirname } from 'node:path';
 import { fileURLToPath } from 'url';
-import { micromark } from 'micromark';
-import { gfm, gfmHtml } from 'micromark-extension-gfm';
-import { math, mathHtml } from 'micromark-extension-math';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkGfm from 'remark-gfm';
+import remarkToc from 'remark-toc';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const micromarkOpts = { extensions: [gfm(), math()], htmlExtensions: [gfmHtml(), mathHtml()], allowDangerousHtml: true };
 
 const html = (title, content) => `<!DOCTYPE html>
 <html lang="en">
@@ -33,19 +35,26 @@ function titleFmt(title) {
 	return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-function buildFile(inFilePath, title, outFilePath = null) {
+async function buildFile(inFilePath, title, outFilePath = null) {
 	if (outFilePath == null) {
 		let fname = rmExt(basename(inFilePath)) + '.html';
 		outFilePath = join(__dirname, '..', 'public', fname);
 	}
 	if (!outFilePath.endsWith('.html')) outFilePath += '.html';
 
-	const md = readFileSync(inFilePath);
-	const res = micromark(md, 'utf-8', micromarkOpts);
+	const md = readFileSync(inFilePath, { encoding: 'utf-8' });
+	const res = await unified()
+		.use(remarkParse)
+		.use(remarkFrontmatter)
+		.use(remarkGfm)
+		.use(remarkToc, { maxDepth: 4, ordered: true, heading: 'toc|table[ -]of[ -]contents?|contents' })
+		.use(remarkRehype)
+		.use(rehypeStringify)
+		.process(md);
 	writeFileSync(outFilePath, html(title, res));
 }
 
-function build() {
+async function build() {
 	const dirpath = join(__dirname, 'markdown');
 
 	let getFName = (name, ...dirs) => {
@@ -59,7 +68,11 @@ function build() {
 		return files;
 	};
 
-	getFiles().forEach((f) => buildFile(f.in, f.title, f.out));
+	for await (const file of getFiles()) {
+		await buildFile(file.in, file.title, file.out);
+	}
 }
 
+const publicPath = join(__dirname, '..', 'public');
+if (!existsSync(publicPath)) mkdirSync(publicPath);
 build();

@@ -8,13 +8,18 @@
 	},
 	"type": "module",
 	"engines": {
-		"node": "17.0.1"
+		"node": ">=16.x.x"
 	},
 	"author": "ArtInLines",
 	"license": "",
 	"dependencies": {
-		"micromark": "^3.1.0",
-		"micromark-extension-gfm": "^2.0.1",
-		"micromark-extension-math": "^2.0.2"
+		"rehype-stringify": "^9.0.3",
+		"remark": "^14.0.2",
+		"remark-frontmatter": "^4.0.1",
+		"remark-gfm": "^3.0.1",
+		"remark-parse": "^10.0.1",
+		"remark-rehype": "^10.1.0",
+		"remark-toc": "^8.0.1",
+		"unified": "^10.1.2"
 	}
 }
