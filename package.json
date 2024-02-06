@@ -4,7 +4,7 @@
 	"description": "This repo contains all the files that make up my blog at [link.com]().",
 	"main": "./src/build.js",
 	"scripts": {
-		"build": "node src/build.js"
+		"build": "node build.js"
 	},
 	"type": "module",
 	"engines": {

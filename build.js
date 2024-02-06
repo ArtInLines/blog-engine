@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import fs from 'node:fs';
 import { basename, join, dirname } from 'node:path';
 import { fileURLToPath } from 'url';
 import { unified } from 'unified';
@@ -19,6 +20,7 @@ const html = (title, content) => `<!DOCTYPE html>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
 	<title>${title}</title>
 </head>
 <body>
@@ -37,19 +39,14 @@ function titleFmt(title) {
 	return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-async function buildFile(inFilePath, title, outFilePath = null) {
-	if (outFilePath == null) {
-		let fname = rmExt(basename(inFilePath)) + '.html';
-		outFilePath = join(__dirname, '..', 'public', fname);
-	}
+async function buildFile(inFilePath, title, outFilePath) {
 	if (!outFilePath.endsWith('.html')) outFilePath += '.html';
-
 	const md = readFileSync(inFilePath, { encoding: 'utf-8' });
 	const res = await unified()
 		.use(remarkParse)
 		.use(remarkFrontmatter)
 		.use(remarkGfm)
-		.use(remarkToc, { maxDepth: 4, ordered: true, heading: 'toc|table[ -]of[ -]contents?|contents' })
+		.use(remarkToc, { maxDepth: 4, ordered: true, heading: 'toc|(table[ -]of[ -])?contents?|contents' })
 		.use(remarkMath)
 		.use(remarkRehype)
 		.use(rehypeKatex)
@@ -58,16 +55,18 @@ async function buildFile(inFilePath, title, outFilePath = null) {
 	writeFileSync(outFilePath, html(title, res));
 }
 
-async function build() {
-	const dirpath = join(__dirname, 'markdown');
-
+async function build(inDir, outDir) {
 	let getFName = (name, ...dirs) => {
-		return { title: titleFmt(rmExt(name)), in: join(...[dirpath, ...dirs, name]), out: join(...[__dirname, '..', 'public', ...dirs, rmExt(name) + '.html']) };
+		return { title: titleFmt(rmExt(name)), in: join(...[inDir, ...dirs, name]), out: join(...[outDir, ...dirs, rmExt(name) + '.html']) };
 	};
 
 	let getFiles = (...dirs) => {
-		const dir = readdirSync(join(dirpath, ...dirs), { withFileTypes: true });
-		const files = dir.filter((dirent) => dirent.isFile()).map((file) => getFName(file.name, ...dirs));
+		const dir = readdirSync(join(inDir, ...dirs), { withFileTypes: true });
+		// @TODO: Add files automatically to index
+		// @TODO: Categorize files according to their parent directory in the index
+		const files = dir
+			.filter((dirent) => dirent.isFile())
+			.map((file) => getFName(file.name, ...dirs));
 		dir.filter((dirent) => dirent.isDirectory()).forEach((dir) => files.push(...getFiles(...[...dirs, dir.name])));
 		return files;
 	};
@@ -77,6 +76,9 @@ async function build() {
 	}
 }
 
-const publicPath = join(__dirname, '..', 'public');
-if (!existsSync(publicPath)) mkdirSync(publicPath);
-build();
+async function main(inDir = join(__dirname, 'markdown'), outDir = join(__dirname, 'public')) {
+	if (!existsSync(outDir)) mkdirSync(outDir);
+	build(inDir, outDir);
+}
+
+main(process.argv[2] || undefined, process.argv[3] || undefined)
